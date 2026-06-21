@@ -6,10 +6,19 @@ URL = "http://localhost:8000/webhook/github"
 
 # ✅ Test GitHub
 github_payload = {
-    "repository": {"name": "bank-of-anthos"},
-    "pusher": {"name": "Ayush"},
+    
+    "repository": {
+        "name": "bank-of-anthos_Test_Ayush",
+        "owner": {
+            "login": "singhayush1421"
+        }
+    },
+    "pusher": {
+        "name": "singhayush1421"
+    },
+
     "head_commit": {
-        "id": "real123",
+        "id": "7b58b0b2045f05d882484bf99f7ccc27610e41f8",
         "timestamp": "2026-06-21T10:00:00Z"
     }
 }
