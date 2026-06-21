@@ -46,6 +46,13 @@ async def github_webhook(payload: GenericWebhookPayload):
 
         #  Transform event
         event = adapter.transform(data)
+        
+        print("\n✅ EVENT RECEIVED:")
+        print(event)
+
+        print("\n✅ RAW PAYLOAD:")
+        print(data)
+
 
         #  Pretty print transformed event
         logger.info(" Transformed event:")
@@ -62,6 +69,8 @@ async def github_webhook(payload: GenericWebhookPayload):
             "event": event
         }
 
+    
     except Exception as e:
-        logger.error(f" Error processing webhook: {str(e)}")
-        raise HTTPException(status_code=500, detail="Internal error")
+        logger.exception("❌ FULL ERROR TRACE:")
+        raise HTTPException(status_code=500, detail=str(e))
+
