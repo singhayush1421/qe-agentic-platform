@@ -1,0 +1,17 @@
+
+repository:
+  url: https://github.com/example: main  url: https://github.com/example/repo.git
+  local_path: ./repos/project
+
+build:
+  tool: maven
+  command: mvn clean install
+
+deploy:
+  environment: dev
+  region: uksouth
+
+adapters:
+  git: true
+  build: true
+  deploy: true

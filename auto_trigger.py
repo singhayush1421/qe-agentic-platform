@@ -1,60 +1,84 @@
 
+import os
 import subprocess
 import time
 import requests
 
-API_URL = "http://127.0.0.1:8000/webhook/github"
+from services.ing_service.config import get_repo_config
 
 
-def get_latest_commit():
+API_URL = os.getenv(
+    "AUTO_TRIGGER_API_URL",
+    "http://127.0.0.1:8000/webhook/github"
+)
+
+
+def get_repo_details():
+    repo_config = get_repo_config()
+    return (
+        repo_config["repo_path"],
+        repo_config["repo_name"],
+        repo_config["repo_owner"],
+    )
+
+
+def get_latest_commit(repo_path: str):
     return subprocess.check_output(
         ["git", "rev-parse", "HEAD"],
-        cwd="C:/Users/ASING442/bank-of-anthos_Test_Ayush"
+        cwd=repo_path,
     ).decode().strip()
 
 
 last_commit = None
+repo_path, repo_name, repo_owner = get_repo_details()
 
-print("🚀 Auto trigger started...")
+print(f"🚀 Auto trigger started for {repo_name} at {repo_path}...")
+
 
 while True:
     try:
-        current_commit = get_latest_commit()
+        current_commit = get_latest_commit(repo_path)
 
-        # ✅ Only trigger when commit changes
         if current_commit != last_commit:
-
             print(f"\n✅ New commit detected: {current_commit}")
 
-            # ✅ WAIT for repo + git consistency
+            # ✅ wait to ensure commit is stable
             time.sleep(5)
 
-            # ✅ Re-check stability
-            new_commit = get_latest_commit()
+            new_commit = get_latest_commit(repo_path)
 
             if new_commit != current_commit:
-                print("⚠️ Commit unstable, skipping...")
+                print("⚠️ Commit unstable (HEAD moved), skipping...")
                 continue
 
-            # ✅ Payload
+            # ✅ FINAL COMMIT TO USE
+            stable_commit = new_commit
+
+            print(f"➡️ Sending stable commit: {stable_commit}")
+
+            # ✅ Build payload
             payload = {
-                "ref": "refs/heads/main",
+                "ref": os.getenv("AUTO_TRIGGER_REF", "refs/heads/main"),
                 "repository": {
-                    "name": "bank-of-anthos_Test_Ayush",
-                    "owner": {"login": "singhayush1421"}
+                    "name": repo_name,
+                    "owner": {
+                        "login": repo_owner or os.getenv("GITHUB_USERNAME", "")
+                    },
                 },
-                "pusher": {"name": "singhayush1421"},
+                "pusher": {
+                    "name": repo_owner or os.getenv("GITHUB_USERNAME", "")
+                },
                 "head_commit": {
-                    "id": current_commit
-                }
+                    "id": stable_commit   # ✅ FIXED HERE
+                },
             }
 
-            # ✅ Call API
+            # ✅ Send to API
             response = requests.post(API_URL, json=payload)
 
-            print("📡 API Status:", response.status_code)
+            print(f"📡 API Status: {response.status_code}")
 
-            last_commit = current_commit
+            last_commit = stable_commit
 
     except Exception as e:
         print("❌ Error:", e)
